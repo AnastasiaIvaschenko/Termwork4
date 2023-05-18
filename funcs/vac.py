@@ -2,107 +2,79 @@
 В этом классе определить атрибуты, такие как название вакансии, ссылка на вакансию, зарплата, краткое описание
  или требования. Класс должен поддерживать методы сравнения вакансий между собой по зарплате и валидировать
  (то есть делать читаемыми для пользователя) данные, которыми инициализируются его атрибуты'''
+
+
 class Vacancy:
-    def __init__(self, data): #, salary_from=None, salary_to=None
+    '''Класс `Vacancy` определяет атрибуты, которые должны быть доступны в работе с вакансиями,
+     полученными с помощью метода `get_vacancies` в классах `HHJobAPI` и `SJJobAPI`.
+     В нашем случае в атрибутах включено название вакансии,
+     зарплата и краткое описание или требования'''
+    def __init__(self, data):
         self.data = data
-        self.name = self.data['profession'] if 'profession' in self.data else self.data['name']
-        self.url = self.data['url'] if 'url' in self.data else self.data['client']['link']
-        self.__salary_from = None #self.data['payment_from'] if 'payment_from' in self.data else self.data['salary']['from']
-        self.__salary_to = None #self.data['payment_to'] if 'payment_to' in self.data else self.data['salary']['to']
-        #self.currency = self.data['currency'] if 'currency' in self.data else self.data['salary']['currency']
-        #self.snippet = snippet_validator(data)
+        self.id = data['id']
+        self.name = data['profession'] if 'profession' in data else data['name']
+
+        salary = data.get('salary')
+        if salary:
+            self.__salary_from = salary.get('from', 0) if isinstance(salary.get('from'), int) else 0
+            self.__salary_to = salary.get('to', 0) if isinstance(salary.get('to'), int) else 0
+        elif 'salary' not in data:
+            self.__salary_from = data.get('payment_from', 0) if isinstance(data.get('from'), int) else 0
+            self.__salary_to = data.get('payment_to', 0) if isinstance(data.get('to'), int) else 0
+        else:
+            self.__salary_from = 0
+            self.__salary_to = 0
+
+        url = data.get('url')
+        if url:
+            self.url = data['url']
+        elif 'url' not in data:
+            self.url = data.get('client', None)
+        else:
+            self.url = None
+
+        snip = data.get('snippet')
+        if snip:
+            self.snippet = snip.get('requirement', None)
+        elif 'snippet' not in data:
+            self.snippet = data.get('candidat', None)
 
     @property
     def salary_from(self):  # возвращает нижний уровень зарплаты по конкретной вакансии
         return self.__salary_from
 
-    @salary_from.setter
-    def salary_from(self):  # находит нижний уровень зарплаты по ключам в словарях hh и sj и записывает ее в инициализацию
-        if 'payment_from' in self.data:
-            self.__salary_from = self.data['payment_from'] if 'payment_from' else ''
-        elif 'salary' in self.data:
-            self.__salary_from = self.data['salary']['from'] if 'salary' else ''
-
     @property
     def salary_to(self):  # возвращает верхний уровень зарплаты по конкретной вакансии
         return self.__salary_to
 
-    @salary_to.setter
-    def salary_to(self):  # находит верхний уровень зарплаты по ключам в словарях hh и sj и записывает ее в инициализацию
-        if 'payment_to' in self.data:
-            self.__salary_to = self.data['payment_to'] if 'payment_to' else ''
-        elif 'salary' in self.data:
-            self.__salary_to = self.data['salary']['to'] if 'salary' else ''
-
+    '''Класс также имеет метод `__str__`, который возвращает строковое представление экземпляра класса, 
+    использующееся для отображения данного объекта в текстовом виде. 
+    В методе используются все определенные атрибуты вакансии.'''
     def __str__(self):
         result = self.name + '\n'
-        result += f"Зарплата: {self.__salary_from} - {self.__salary_to}" + '\n'
-       #result += f"Краткое описание: {self.snippet}\n" if self.snippet else ""
+        result += f"Зарплата: {self.salary_from} - {self.salary_to}" + '\n'
+        result += f"Краткое описание: {self.snippet}\n"
         result += f"Ссылка: {self.url}\n"
         return result.strip()
 
+    def salary_average(self):
+        return (int(self.salary_from) + int(self.salary_to)) / 2
 
-    '''Метод `set_salary` устанавливает значения зарплаты на основе информации об этом, который передается в виде словаря.'''
+    def __lt__(self, other):
+        return self.salary_average() < other.salary_average()
 
-    def set_salary(self, salary_info):
-        if "salary" in salary_info:
-            salary = salary_info["salary"]  #получаем словарик по ключу 'salary'
-            self.salary_from = salary.get("from")
-            self.salary_to = salary.get("to")
-            self.currency = salary.get("currency")
-        elif ("payment_from" in salary_info) and ("payment_to" in salary_info):
-            self.salary_from = salary_info["payment_from"]
-            self.salary_to = salary_info["payment_to"]
-            self.currency = salary_info.get("currency")
+    def __gt__(self, other):
+        return self.salary_average() > other.salary_average()
 
-    def get_salary(self):
-        return {"salary_from": self.salary_from, "salary_to": self.salary_to, "currency": self.currency}
+    def __eq__(self, other):
+        return self.salary_average() == other.salary_average()
 
-    def compare_salary(self, other_vacancy):
-        if not isinstance(other_vacancy, Vacancy):
-            raise ValueError("Can't compare salaries with non-Vacancy object")
-        if self.salary_to and self.salary_from:
-            self_avg = (self.salary_to + self.salary_from) / 2
-        elif self.salary_from:
-            self_avg = self.salary_from
-        else:
-            self_avg = self.salary_to
-        if other_vacancy.salary_to and other_vacancy.salary_from:
-            other_avg = (other_vacancy.salary_to + other_vacancy.salary_from) / 2
-        elif other_vacancy.salary_from:
-            other_avg = other_vacancy.salary_from
-        else:
-            other_avg = other_vacancy.salary_to
-        if self_avg is None or other_avg is None:
-            return None
-        return self_avg - other_avg
+    def __le__(self, other):
+        return self.salary_average() <= other.salary_average()
 
-
-
-'''Класс `Vacancy` определяет атрибуты, которые должны быть доступны в работе с вакансиями,
- полученными с помощью метода `get_vacancies` в классах `HHJobAPI` и `SJJobAPI`. 
- В нашем случае в атрибутах включено название вакансии, ссылка на вакансию, 
- зарплата и краткое описание или требования.
-
-Класс также имеет метод `__str__`, который возвращает строковое представление экземпляра класса, 
-использующееся для отображения данного объекта в текстовом виде. 
-В методе используются все определенные атрибуты вакансии.
-
-Метод `_clean_text` предназначен для удаления HTML-разметки из значений атрибутов класса. 
-Этот метод является вспомогательным и используется в конструкторе и других методах класса.
-
-Класс поддерживает методы сравнения `==` и `<` между двумя экземплярами класса, 
-которые сравнивают зарплаты вакансий и опираются на значения salay атрибута. 
-Если значение salary не задано, оно рассматривается как 0.
-'''
-# hh = HHJobAPI()
-# hh.connect('...')
-# results = hh.get_vacancies('python')
-# vacancies = [Vacancy(**item) for item in results['items']]
-# sorted_vacancies = sorted(vacancies)
-# for vacancy in sorted_vacancies:
-#     print(vacancy)
-'''В этом примере мы создаем экземпляр класса `HHJobAPI`, 
-устанавливаем соединение с API и получаем список вакансий по запросу "python". 
-Создаем экземпляры класса `Vacancy` для всех элементов списка, используя распаковку словаря (`**item`). 
-Затем мы сортируем список вакансий по зарплате и выводим информацию о каждой вакансии на экран.'''
+    def __ge__(self, other):
+        return self.salary_average() >= other.salary_average()
+    '''Класс поддерживает магические методы сравнения `==` и `<` между двумя экземплярами класса, 
+    которые сравнивают зарплаты вакансий и опираются на значения salary атрибута. 
+    Срабатывают автоматически при последующем
+    сравнении экземпляров класса Vacancy по заданному критерию(зарплате) методами sort или max '''

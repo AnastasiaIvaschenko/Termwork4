@@ -18,11 +18,11 @@ class JobFileManager(ABC):
         pass
 
     @abstractmethod
-    def get_vacancies(self, **filters):
+    def get_vacancies(self):
         pass
 
     @abstractmethod
-    def delete_vacancies(self, **filters):
+    def delete_vacancies(self):
         pass
 '''Для обобщения операций по сохранению и управлению данными о вакансиях 
 был создан абстрактный класс `JobFileManager`, определяющий абстрактные методы
