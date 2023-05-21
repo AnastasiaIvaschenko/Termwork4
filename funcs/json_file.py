@@ -21,13 +21,3 @@ class JSONJobFileManager(JobFileManager):
             vacancies = [Vacancy(json.loads(line)) for line in f.readlines()]
         return vacancies
 
-    '''Метод `delete_vacancies` находит в файле вакансии, соответствующие заданным критериям, и удаляет их'''
-    def delete_vacancies(self): #не получается отфильтровать вакансии по заданному ключу,
-        # чтобы перезаписывать в файл json только отфильтрованные
-        filtered_vacancies = self.get_vacancies()
-
-        with open(self.file_path, 'w', encoding='utf-8') as f:
-            for line in f:
-                vacancy = Vacancy(json.loads(line))
-                if vacancy not in filtered_vacancies:
-                    f.write(line)

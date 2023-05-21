@@ -5,10 +5,8 @@ import os
 '''`HHJobAPI` и `SJJobAPI` используют библиотеку `requests` для выполнения HTTP-запросов к API hh.ru и superjob.ru 
 соответственно.'''
 
-API_KEY = os.environ.get('SUPERJOB_API_KEY')
-
+API_KEY = os.environ.get('SUPERJOB_API_KEY') #здесь должно быть значение ключа API, полученного на сайте superjob.ru
 class SJJobAPI(JobAPI):
-    #SUPERJOB_API_KEY = os.environ.get('SUPERJOB_API_KEY')
     def __init__(self):
         self.api_url = 'https://api.superjob.ru/2.0/vacancies/'
         self.api_key = API_KEY
